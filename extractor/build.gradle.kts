@@ -192,6 +192,8 @@ publishing {
 
 signing {
     setRequired(shouldSignCIRelease)
-    useInMemoryPgpKeys(ciSigningKey, ciSigningPassword)
+    if (shouldSignCIRelease) {
+        useInMemoryPgpKeys(ciSigningKey, ciSigningPassword)
+    }
     sign(publishing.publications["snapshot"])
 }
