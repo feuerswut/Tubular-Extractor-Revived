@@ -872,6 +872,8 @@ public class StreamInfo extends Info {
 
     public void setReturnYouTubeDislikeInfo(final @Nullable ReturnYouTubeDislikeInfo rydInfo) {
         this.rydInfo = rydInfo;
+    }
+
     public boolean hasLiveChat() {
         return liveChat;
     }
