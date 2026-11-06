@@ -390,6 +390,12 @@ public class StreamInfo extends Info {
         } catch (final Exception e) {
             streamInfo.addError(e);
         }
+        try {
+            streamInfo.setLiveChat(extractor.hasLiveChat());
+            streamInfo.setLiveChatContinuation(extractor.getLiveChatContinuation());
+        } catch (final Exception e) {
+            streamInfo.addError(e);
+        }
 
         streamInfo.setRelatedItems(ExtractorHelper.getRelatedItemsOrLogError(streamInfo,
                 extractor));
@@ -445,6 +451,8 @@ public class StreamInfo extends Info {
     private ContentAvailability contentAvailability = ContentAvailability.AVAILABLE;
     private List<SponsorBlockSegment> sponsorBlockSegments = new ArrayList<>();
     @Nullable private ReturnYouTubeDislikeInfo rydInfo;
+    private boolean liveChat = false;
+    private String liveChatContinuation = null;
 
     /**
      * Preview frames, e.g. for the storyboard / seekbar thumbnail preview
@@ -864,5 +872,19 @@ public class StreamInfo extends Info {
 
     public void setReturnYouTubeDislikeInfo(final @Nullable ReturnYouTubeDislikeInfo rydInfo) {
         this.rydInfo = rydInfo;
+    public boolean hasLiveChat() {
+        return liveChat;
+    }
+
+    public void setLiveChat(final boolean liveChat) {
+        this.liveChat = liveChat;
+    }
+
+    public String getLiveChatContinuation() {
+        return liveChatContinuation;
+    }
+
+    public void setLiveChatContinuation(final String liveChatContinuation) {
+        this.liveChatContinuation = liveChatContinuation;
     }
 }
