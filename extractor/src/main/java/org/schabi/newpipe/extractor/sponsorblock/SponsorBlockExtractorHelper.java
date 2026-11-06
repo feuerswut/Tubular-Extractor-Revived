@@ -85,19 +85,18 @@ public final class SponsorBlockExtractorHelper {
             return new SponsorBlockSegment[0];
         }
 
-        final String url = apiSettings.apiUrl + "skipSegments/" + videoIdHash.substring(0, 4)
+        final String path = "skipSegments/" + videoIdHash.substring(0, 4)
                 + "?categories=" + categoryParams
                 + "&actionTypes=" + actionParams
                 + "&userAgent=Mozilla/5.0";
 
+        // Try the caching proxy first (if configured), then the regular API.
         JsonArray responseArray = null;
-
-        try {
-            final String responseBody = NewPipe.getDownloader().get(url).responseBody();
-
-            responseArray = JsonParser.array().from(responseBody);
-        } catch (ReCaptchaException | IOException | JsonParserException e) {
-            // ignored
+        if (apiSettings.proxyApiUrl != null && !apiSettings.proxyApiUrl.isEmpty()) {
+            responseArray = fetchSegmentArray(apiSettings.proxyApiUrl + path);
+        }
+        if (responseArray == null) {
+            responseArray = fetchSegmentArray(apiSettings.apiUrl + path);
         }
 
         if (responseArray == null) {
@@ -142,6 +141,23 @@ public final class SponsorBlockExtractorHelper {
         }
 
         return result.toArray(new SponsorBlockSegment[0]);
+    }
+
+    /**
+     * Fetches and parses a skipSegments response.
+     *
+     * @return the parsed array, or {@code null} on any network, HTTP (non-200) or parse failure
+     */
+    private static JsonArray fetchSegmentArray(final String url) {
+        try {
+            final Response response = NewPipe.getDownloader().get(url);
+            if (response.responseCode() != 200) {
+                return null;
+            }
+            return JsonParser.array().from(response.responseBody());
+        } catch (ReCaptchaException | IOException | JsonParserException | RuntimeException e) {
+            return null;
+        }
     }
 
     public static Response submitSponsorBlockSegment(

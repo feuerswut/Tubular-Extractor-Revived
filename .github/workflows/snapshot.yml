@@ -8,6 +8,8 @@ on:
 
 jobs:
   build-and-deploy-docs:
+    # Publishing to Maven Central needs the upstream team's secrets; it always fails in forks.
+    if: github.repository == 'TeamNewPipe/NewPipeExtractor'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
