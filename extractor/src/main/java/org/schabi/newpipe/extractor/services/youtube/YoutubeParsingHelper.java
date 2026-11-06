@@ -21,11 +21,7 @@
 package org.schabi.newpipe.extractor.services.youtube;
 
 import static org.schabi.newpipe.extractor.NewPipe.getDownloader;
-import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.ANDROID_CLIENT_VERSION;
 import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.DESKTOP_CLIENT_PLATFORM;
-import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.IOS_CLIENT_VERSION;
-import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.IOS_DEVICE_MODEL;
-import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.IOS_USER_AGENT_VERSION;
 import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.VISIONOS_CLIENT_VERSION;
 import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.VISIONOS_DEVICE_MODEL;
 import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.VISIONOS_USER_AGENT_VERSION;
@@ -484,15 +480,19 @@ public final class YoutubeParsingHelper {
         if (clientVersionExtracted) {
             return;
         }
-        final String url = "https://www.youtube.com/sw.js";
+        final String url = "https://www.youtube.com/sw.js_data";
         final var headers = getOriginReferrerHeaders("https://www.youtube.com");
-        final String response = getDownloader().get(url, headers).responseBody();
+        String response = getDownloader().get(url, headers).responseBody();
+        if (response.startsWith(")]}'")) {
+            response = response.substring(4);
+        }
+
         try {
-            clientVersion = getStringResultFromRegexArray(response,
-                    INNERTUBE_CONTEXT_CLIENT_VERSION_REGEXES, 1);
-        } catch (final Parser.RegexException e) {
+            final JsonArray data = JsonParser.array().from(response);
+            clientVersion = data.getArray(0).getArray(2).getArray(0).getArray(0).getString(16);
+        } catch (final JsonParserException e) {
             throw new ParsingException("Could not extract YouTube WEB InnerTube client version "
-                    + "from sw.js", e);
+                + "from sw.js", e);
         }
         clientVersionExtracted = true;
     }
@@ -1076,48 +1076,6 @@ public final class YoutubeParsingHelper {
     }
 
     /**
-     * Get the user-agent string used as the user-agent for InnerTube requests with the Android
-     * client.
-     *
-     * <p>
-     * If the {@link Localization} provided is {@code null}, fallbacks to
-     * {@link Localization#DEFAULT the default one}.
-     * </p>
-     *
-     * @param localization the {@link Localization} to set in the user-agent
-     * @return the Android user-agent used for InnerTube requests with the Android client,
-     * depending on the {@link Localization} provided
-     */
-    @Nonnull
-    public static String getAndroidUserAgent(@Nullable final Localization localization) {
-        return "com.google.android.youtube/" + ANDROID_CLIENT_VERSION
-                + " (Linux; U; Android 15; "
-                + (localization != null ? localization : Localization.DEFAULT).getCountryCode()
-                + ") gzip";
-    }
-
-    /**
-     * Get the user-agent string used as the user-agent for InnerTube requests with the iOS
-     * client.
-     *
-     * <p>
-     * If the {@link Localization} provided is {@code null}, fallbacks to
-     * {@link Localization#DEFAULT the default one}.
-     * </p>
-     *
-     * @param localization the {@link Localization} to set in the user-agent
-     * @return the iOS user-agent used for InnerTube requests with the iOS client, depending on the
-     * {@link Localization} provided
-     */
-    @Nonnull
-    public static String getIosUserAgent(@Nullable final Localization localization) {
-        return "com.google.ios.youtube/" + IOS_CLIENT_VERSION + "(" + IOS_DEVICE_MODEL
-                + "; U; CPU iOS " + IOS_USER_AGENT_VERSION + " like Mac OS X; "
-                + (localization != null ? localization : Localization.DEFAULT).getCountryCode()
-                + ")";
-    }
-
-    /**
      * Get the user-agent string used as the user-agent for InnerTube requests with the visionOS
      * client.
      *
@@ -1370,36 +1328,6 @@ public final class YoutubeParsingHelper {
      */
     public static boolean isWebStreamingUrl(@Nonnull final String url) {
         return Parser.isMatch(C_WEB_PATTERN, url);
-    }
-
-    /**
-     * Check if the streaming URL is from the YouTube {@code WEB_EMBEDDED_PLAYER} client.
-     *
-     * @param url the streaming URL to be checked.
-     * @return true if it's a {@code WEB_EMBEDDED_PLAYER} streaming URL, false otherwise
-     */
-    public static boolean isWebEmbeddedPlayerStreamingUrl(@Nonnull final String url) {
-        return Parser.isMatch(C_WEB_EMBEDDED_PLAYER_PATTERN, url);
-    }
-
-    /**
-     * Check if the streaming URL is a URL from the YouTube {@code ANDROID} client.
-     *
-     * @param url the streaming URL to be checked.
-     * @return true if it's a {@code ANDROID} streaming URL, false otherwise
-     */
-    public static boolean isAndroidStreamingUrl(@Nonnull final String url) {
-        return Parser.isMatch(C_ANDROID_PATTERN, url);
-    }
-
-    /**
-     * Check if the streaming URL is a URL from the YouTube {@code IOS} client.
-     *
-     * @param url the streaming URL on which check if it's a {@code IOS} streaming URL.
-     * @return true if it's a {@code IOS} streaming URL, false otherwise
-     */
-    public static boolean isIosStreamingUrl(@Nonnull final String url) {
-        return Parser.isMatch(C_IOS_PATTERN, url);
     }
 
     /**
